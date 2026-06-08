@@ -7,8 +7,8 @@ on:
 
 env:
   AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
-  ECR_BACKEND_REPOSITORY: ${{ vars.ECR_BACKEND_REPOSITORY || 'simple-blog-backend' }}
-  ECR_FRONTEND_REPOSITORY: ${{ vars.ECR_FRONTEND_REPOSITORY || 'simple-blog-frontend' }}
+  ECR_BACKEND_REPOSITORY: ${{ vars.ECR_BACKEND_REPOSITORY || 'simple-blog-production-backend' }}
+  ECR_FRONTEND_REPOSITORY: ${{ vars.ECR_FRONTEND_REPOSITORY || 'simple-blog-production-frontend' }}
 
 jobs:
   build-and-push:
@@ -52,8 +52,6 @@ jobs:
           tags: |
             ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_FRONTEND_REPOSITORY }}:${{ github.sha }}
             ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_FRONTEND_REPOSITORY }}:latest
-          build-args: |
-            VITE_API_BASE_URL=${{ vars.VITE_API_BASE_URL }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 

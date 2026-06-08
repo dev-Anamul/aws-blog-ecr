@@ -5,7 +5,9 @@ import type {
   UpdateBlogPostPayload,
 } from '../types/blogPost';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000/api/v1';
+// Relative path works with ALB path-based routing on a single host (e.g. /api/v1).
+// Override with an absolute URL only for split local dev (see frontend/.env.example).
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api/v1';
 
 class ApiClientError extends Error {
   status: number;

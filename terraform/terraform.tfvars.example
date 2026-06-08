@@ -1,0 +1,33 @@
+aws_region   = "us-east-1"
+project_name = "simple-blog"
+environment  = "production"
+
+# Multi-tier VPC (2 AZs minimum)
+availability_zone_count = 2
+vpc_cidr                = "10.0.0.0/16"
+
+# NAT: false = one NAT per AZ (HA), true = single NAT (lower cost)
+single_nat_gateway = false
+
+# VPC endpoints for ECR, S3, Secrets Manager, CloudWatch Logs
+enable_vpc_endpoints = true
+
+# RDS high availability
+db_instance_class      = "db.t4g.micro"
+db_multi_az            = true
+db_deletion_protection = true
+
+# ECS tasks spread across AZs (minimum 2 for HA)
+backend_desired_count  = 2
+frontend_desired_count = 2
+
+# Push images to ECR before apply, or update after first apply
+backend_image_tag  = "latest"
+frontend_image_tag = "latest"
+
+# GitHub Actions OIDC (optional)
+# github_repository = "your-org/simple-blog"
+
+# HTTPS (requires ACM certificate in the same region)
+# enable_https        = true
+# acm_certificate_arn = "arn:aws:acm:us-east-1:123456789012:certificate/..."

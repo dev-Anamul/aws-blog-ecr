@@ -118,13 +118,24 @@ docker run --name simple-blog-db \
 
 Backend settings are loaded from environment variables. See `backend/.env.example`.
 
-Frontend build-time API URL:
+### Frontend API URL (same-host / ALB path routing)
+
+The frontend defaults to a **relative** API base path:
 
 ```env
-VITE_API_BASE_URL=http://localhost:8000/api/v1
+VITE_API_BASE_URL=/api/v1
 ```
 
-In production, set this to your public API URL before building the frontend image.
+With an Application Load Balancer on one domain:
+
+```text
+https://example.com/          -> frontend
+https://example.com/api/v1/*    -> backend
+```
+
+The browser calls `/api/v1/posts` on the same host, so you do **not** need a separate backend URL in production. One frontend image works for every environment behind path-based routing.
+
+For local split-service development (`pnpm dev` + backend on `:8060`), keep the relative path and let Vite proxy `/api` to the backend. See `frontend/.env.example`.
 
 ## Docker Images
 
@@ -132,23 +143,25 @@ Build locally:
 
 ```bash
 docker build -t simple-blog-backend ./backend
-docker build \
-  --build-arg VITE_API_BASE_URL=http://localhost:8000/api/v1 \
-  -t simple-blog-frontend ./frontend
+docker build -t simple-blog-frontend ./frontend
 ```
 
 Both images include health checks and run as non-root users where applicable.
 
-## AWS Deployment
+## AWS Deployment (Terraform)
 
-See the full guide in [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for:
+Infrastructure is defined in [`terraform/`](terraform/README.md):
 
-- Creating ECR repositories
-- Authenticating Docker with ECR
-- Pushing versioned images
-- Deploying with ECS Fargate or App Runner
-- Secret management with AWS Secrets Manager / SSM
-- CI/CD with GitHub Actions
+```bash
+cd terraform
+cp terraform.tfvars.example terraform.tfvars
+terraform init
+terraform apply
+```
+
+This provisions VPC, ECR, RDS, ECS Fargate, ALB path routing, and Secrets Manager.
+
+See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for the full workflow from local development to production.
 
 ## CI/CD
 
@@ -158,7 +171,7 @@ See the full guide in [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for:
 Required GitHub configuration:
 
 - Secret: `AWS_ROLE_TO_ASSUME`
-- Variables: `AWS_REGION`, `ECR_BACKEND_REPOSITORY`, `ECR_FRONTEND_REPOSITORY`, `VITE_API_BASE_URL`
+- Variables: `AWS_REGION`, `ECR_BACKEND_REPOSITORY`, `ECR_FRONTEND_REPOSITORY`
 
 ## Production Practices Included
 

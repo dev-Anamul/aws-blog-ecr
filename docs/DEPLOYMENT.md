@@ -89,19 +89,52 @@ docker tag $ECR_REGISTRY/simple-blog-backend:$IMAGE_TAG \
 docker push $ECR_REGISTRY/simple-blog-backend:$IMAGE_TAG
 docker push $ECR_REGISTRY/simple-blog-backend:latest
 
-# Frontend (set production API URL at build time)
-docker build \
-  --build-arg VITE_API_BASE_URL=https://api.example.com/api/v1 \
-  -t $ECR_REGISTRY/simple-blog-frontend:$IMAGE_TAG ./frontend
+# Frontend (uses relative /api/v1 by default for same-host ALB routing)
+docker build -t $ECR_REGISTRY/simple-blog-frontend:$IMAGE_TAG ./frontend
 docker tag $ECR_REGISTRY/simple-blog-frontend:$IMAGE_TAG \
            $ECR_REGISTRY/simple-blog-frontend:latest
 docker push $ECR_REGISTRY/simple-blog-frontend:$IMAGE_TAG
 docker push $ECR_REGISTRY/simple-blog-frontend:latest
 ```
 
-## 5. AWS Infrastructure Options
+## 5. Provision Infrastructure with Terraform
 
-### Recommended: ECS on Fargate
+The recommended path is to use the Terraform configuration in `terraform/`:
+
+```bash
+cd terraform
+cp terraform.tfvars.example terraform.tfvars
+terraform init
+terraform plan
+terraform apply
+```
+
+This creates a **production-grade, multi-tier VPC**:
+
+| Tier | Subnets | Resources |
+|------|---------|-----------|
+| Public | 2 AZs | ALB, NAT Gateway |
+| Application (private) | 2 AZs | ECS Fargate tasks |
+| Database (private) | 2 AZs | RDS PostgreSQL (Multi-AZ) |
+
+Also provisioned: ECR, Secrets Manager, VPC endpoints, VPC flow logs, least-privilege security groups, and optional GitHub Actions OIDC.
+
+After apply, push images and redeploy ECS services (see `terraform/README.md`).
+
+```bash
+terraform output application_url
+```
+
+### Terraform + GitHub Actions
+
+1. Set `github_repository = "your-org/simple-blog"` in `terraform.tfvars`
+2. `terraform apply`
+3. Set GitHub secret `AWS_ROLE_TO_ASSUME` to `terraform output -raw github_actions_role_arn`
+4. Set GitHub variables `ECR_BACKEND_REPOSITORY` and `ECR_FRONTEND_REPOSITORY` to match Terraform ECR repo names
+
+## 6. AWS Infrastructure Options
+
+### Recommended: ECS on Fargate (via Terraform)
 
 Use ECS Fargate for production-style container orchestration:
 
@@ -116,9 +149,10 @@ High-level components:
 Internet
    │
    ▼
-Application Load Balancer
-   ├── /api/*  ──► ECS Service: backend (port 8000)
-   └── /*      ──► ECS Service: frontend (port 80)
+Application Load Balancer (https://example.com)
+   ├── /api/*   ──► ECS Service: backend (port 8000)
+   ├── /health* ──► ECS Service: backend (port 8000)  # target group health checks
+   └── /*       ──► ECS Service: frontend (port 80)
                          │
                          ▼
                    RDS PostgreSQL
@@ -135,7 +169,7 @@ App Runner is simpler for learning deployments:
 
 App Runner handles load balancing and scaling with less infrastructure setup.
 
-## 6. Environment and Secret Management
+## 7. Environment and Secret Management
 
 Never bake secrets into Docker images.
 
@@ -148,11 +182,15 @@ Never bake secrets into Docker images.
 | `CORS_ORIGINS` | `https://app.example.com` | Comma-separated |
 | `LOG_LEVEL` | `INFO` | Use `WARNING` in prod if desired |
 
-### Frontend build argument
+### Frontend API configuration
 
-| Variable | Example | Notes |
+| Variable | Default | Notes |
 |----------|---------|-------|
-| `VITE_API_BASE_URL` | `https://api.example.com/api/v1` | Build-time only |
+| `VITE_API_BASE_URL` | `/api/v1` | Relative path for same-host ALB routing. Override only for split-origin local dev. |
+
+When frontend and backend share one ALB hostname, the browser requests `https://example.com/api/v1/posts`. No per-environment backend URL is baked into the image.
+
+Local Docker Compose simulates this: nginx in the frontend container proxies `/api/` to the backend service.
 
 ### AWS Secrets Manager example
 
@@ -166,7 +204,7 @@ aws secretsmanager create-secret \
 
 Reference the secret in ECS task definitions using `secrets` instead of plain `environment` values.
 
-## 7. ECS Task Definition Notes
+## 8. ECS Task Definition Notes
 
 Backend container:
 
@@ -182,7 +220,7 @@ Frontend container:
 - Port: `80`
 - Health check command: `wget -qO- http://localhost/health`
 
-## 8. GitHub Actions CI/CD
+## 9. GitHub Actions CI/CD
 
 This repository includes:
 
@@ -200,7 +238,6 @@ Repository variables:
 - `AWS_REGION`
 - `ECR_BACKEND_REPOSITORY`
 - `ECR_FRONTEND_REPOSITORY`
-- `VITE_API_BASE_URL`
 
 ### IAM role trust policy (GitHub OIDC)
 
@@ -238,7 +275,7 @@ Attach policies allowing:
 - `ecr:PutImage`
 - `ecr:UploadLayerPart`
 
-## 9. Observability
+## 10. Observability
 
 ### Logging
 
@@ -254,7 +291,7 @@ Attach policies allowing:
 
 Configure ALB target group health checks against these endpoints.
 
-## 10. Production Checklist
+## 11. Production Checklist
 
 - [ ] RDS PostgreSQL with backups enabled
 - [ ] Secrets stored in AWS Secrets Manager
@@ -266,7 +303,7 @@ Configure ALB target group health checks against these endpoints.
 - [ ] CloudWatch alarms for unhealthy targets
 - [ ] Database migrations strategy defined (Alembic included in dependencies)
 
-## 11. Rollback Strategy
+## 12. Rollback Strategy
 
 Because images are tagged by git SHA:
 
@@ -283,7 +320,7 @@ aws ecs update-service \
   --force-new-deployment
 ```
 
-## 12. Next Learning Steps
+## 13. Next Learning Steps
 
 - Add Alembic migrations and run them in CI/CD
 - Introduce Terraform or AWS CDK for infrastructure as code

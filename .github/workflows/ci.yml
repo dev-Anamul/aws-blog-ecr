@@ -77,8 +77,6 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build frontend
-        env:
-          VITE_API_BASE_URL: http://localhost:8000/api/v1
         run: pnpm run build
 
   docker-build:
@@ -106,7 +104,5 @@ jobs:
           context: ./frontend
           push: false
           tags: simple-blog-frontend:ci
-          build-args: |
-            VITE_API_BASE_URL=http://localhost:8000/api/v1
           cache-from: type=gha
           cache-to: type=gha,mode=max
