@@ -1,0 +1,35 @@
+# Dependencies
+node_modules/
+frontend/dist/
+package-lock.json
+backend/.venv/
+backend/__pycache__/
+backend/app/__pycache__/
+backend/**/__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+
+# Environment files
+.env
+.env.*
+!.env.example
+backend/.env
+frontend/.env
+
+# IDE and OS
+.idea/
+.vscode/
+.DS_Store
+
+# Logs
+*.log
+npm-debug.log*
+
+# Docker
+.docker/
+
+# Test and coverage
+.coverage
+htmlcov/
+.pytest_cache/
