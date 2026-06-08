@@ -111,11 +111,11 @@ terraform apply
 
 This creates a **production-grade, multi-tier VPC**:
 
-| Tier | Subnets | Resources |
-|------|---------|-----------|
-| Public | 2 AZs | ALB, NAT Gateway |
-| Application (private) | 2 AZs | ECS Fargate tasks |
-| Database (private) | 2 AZs | RDS PostgreSQL (Multi-AZ) |
+| Tier                  | Subnets | Resources                 |
+| --------------------- | ------- | ------------------------- |
+| Public                | 2 AZs   | ALB, NAT Gateway          |
+| Application (private) | 2 AZs   | ECS Fargate tasks         |
+| Database (private)    | 2 AZs   | RDS PostgreSQL (Multi-AZ) |
 
 Also provisioned: ECR, Secrets Manager, VPC endpoints, VPC flow logs, least-privilege security groups, and optional GitHub Actions OIDC.
 
@@ -175,17 +175,17 @@ Never bake secrets into Docker images.
 
 ### Backend environment variables
 
-| Variable | Example | Notes |
-|----------|---------|-------|
-| `ENVIRONMENT` | `production` | Disables debug docs |
-| `DATABASE_URL` | `postgresql://...` | Store in Secrets Manager |
-| `CORS_ORIGINS` | `https://app.example.com` | Comma-separated |
-| `LOG_LEVEL` | `INFO` | Use `WARNING` in prod if desired |
+| Variable       | Example                   | Notes                            |
+| -------------- | ------------------------- | -------------------------------- |
+| `ENVIRONMENT`  | `production`              | Disables debug docs              |
+| `DATABASE_URL` | `postgresql://...`        | Store in Secrets Manager         |
+| `CORS_ORIGINS` | `https://app.example.com` | Comma-separated                  |
+| `LOG_LEVEL`    | `INFO`                    | Use `WARNING` in prod if desired |
 
 ### Frontend API configuration
 
-| Variable | Default | Notes |
-|----------|---------|-------|
+| Variable            | Default   | Notes                                                                              |
+| ------------------- | --------- | ---------------------------------------------------------------------------------- |
 | `VITE_API_BASE_URL` | `/api/v1` | Relative path for same-host ALB routing. Override only for split-origin local dev. |
 
 When frontend and backend share one ALB hostname, the browser requests `https://example.com/api/v1/posts`. No per-environment backend URL is baked into the image.
