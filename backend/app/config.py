@@ -15,7 +15,7 @@ class Settings(BaseSettings):
 
     app_name: str = "Simple Blog API"
     app_version: str = "1.0.0"
-    environment: str = Field(default="development", pattern="^(development|staging|production)$")
+    environment: str = Field(default="dev", pattern="^(dev|staging|production)$")
     debug: bool = False
 
     api_v1_prefix: str = "/api/v1"
