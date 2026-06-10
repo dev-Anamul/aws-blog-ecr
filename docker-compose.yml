@@ -46,6 +46,8 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        NGINX_CONF: nginx.compose.conf
     container_name: simple-blog-frontend
     restart: unless-stopped
     depends_on:
